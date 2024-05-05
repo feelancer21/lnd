@@ -275,6 +275,10 @@
   pages automatically using `lncli generatemanpage` command for both `lncli`
   and `lnd` commands when running `make install` in the Makefile.
 
+* The [`lncli wallet estimatefeerate`](https://github.com/lightningnetwork/lnd/pull/8730)
+  command returns the fee rate estimate for on-chain transactions in sat/kw to
+  achieve a given confirmation target.
+
 # Improvements
 ## Functional Updates
 ### Tlv
