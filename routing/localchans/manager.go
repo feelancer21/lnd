@@ -50,7 +50,8 @@ type Manager struct {
 // UpdatePolicy updates the policy for the specified channels on disk and in
 // the active links.
 func (r *Manager) UpdatePolicy(newSchema routing.ChannelPolicy,
-	chanPoints ...wire.OutPoint) ([]*lnrpc.FailedUpdate, error) {
+	updateInboundFee bool, chanPoints ...wire.OutPoint) (
+	[]*lnrpc.FailedUpdate, error) {
 
 	r.policyUpdateLock.Lock()
 	defer r.policyUpdateLock.Unlock()
@@ -88,7 +89,8 @@ func (r *Manager) UpdatePolicy(newSchema routing.ChannelPolicy,
 		delete(unprocessedChans, info.ChannelPoint)
 
 		// Apply the new policy to the edge.
-		err := r.updateEdge(tx, info.ChannelPoint, edge, newSchema)
+		err := r.updateEdge(tx, info.ChannelPoint, edge, newSchema,
+			updateInboundFee)
 		if err != nil {
 			failedUpdates = append(failedUpdates,
 				makeFailureItem(info.ChannelPoint,
@@ -173,8 +175,8 @@ func (r *Manager) UpdatePolicy(newSchema routing.ChannelPolicy,
 
 // updateEdge updates the given edge with the new schema.
 func (r *Manager) updateEdge(tx kvdb.RTx, chanPoint wire.OutPoint,
-	edge *models.ChannelEdgePolicy,
-	newSchema routing.ChannelPolicy) error {
+	edge *models.ChannelEdgePolicy, newSchema routing.ChannelPolicy,
+	updateInboundFee bool) error {
 
 	// Update forwarding fee scheme and required time lock delta.
 	edge.FeeBaseMSat = newSchema.BaseFee
@@ -182,9 +184,13 @@ func (r *Manager) updateEdge(tx kvdb.RTx, chanPoint wire.OutPoint,
 		newSchema.FeeRate,
 	)
 
-	inboundFee := newSchema.InboundFee.ToWire()
-	if err := edge.ExtraOpaqueData.PackRecords(&inboundFee); err != nil {
-		return err
+	// To avoid setting inbound fees to 0, they are only updated when needed.
+	if updateInboundFee {
+		inboundFee := newSchema.InboundFee.ToWire()
+		err := edge.ExtraOpaqueData.PackRecords(&inboundFee)
+		if err != nil {
+			return err
+		}
 	}
 
 	edge.TimeLockDelta = uint16(newSchema.TimeLockDelta)

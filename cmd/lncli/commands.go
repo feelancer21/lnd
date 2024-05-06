@@ -2296,11 +2296,12 @@ func updateChannelPolicy(ctx *cli.Context) error {
 	defer cleanUp()
 
 	var (
-		baseFee       int64
-		feeRate       float64
-		feeRatePpm    uint64
-		timeLockDelta uint16
-		err           error
+		baseFee             int64
+		feeRate             float64
+		feeRatePpm          uint64
+		timeLockDelta       uint16
+		inboundFeeSpecified bool
+		err                 error
 	)
 	args := ctx.Args()
 
@@ -2387,12 +2388,23 @@ func updateChannelPolicy(ctx *cli.Context) error {
 		return errors.New("inbound_fee_rate_ppm out of range")
 	}
 
+	switch {
+	case ctx.IsSet("inbound_base_fee_msat") !=
+		ctx.IsSet("inbound_fee_rate_ppm"):
+		return errors.New("both parameters must be provided: " +
+			"inbound_base_fee_msat and inbound_fee_rate_ppm")
+
+	case ctx.IsSet("inbound_fee_rate_ppm"):
+		inboundFeeSpecified = true
+	}
+
 	req := &lnrpc.PolicyUpdateRequest{
-		BaseFeeMsat:        baseFee,
-		TimeLockDelta:      uint32(timeLockDelta),
-		MaxHtlcMsat:        ctx.Uint64("max_htlc_msat"),
-		InboundBaseFeeMsat: int32(inboundBaseFeeMsat),
-		InboundFeeRatePpm:  int32(inboundFeeRatePpm),
+		BaseFeeMsat:         baseFee,
+		TimeLockDelta:       uint32(timeLockDelta),
+		MaxHtlcMsat:         ctx.Uint64("max_htlc_msat"),
+		InboundBaseFeeMsat:  int32(inboundBaseFeeMsat),
+		InboundFeeRatePpm:   int32(inboundFeeRatePpm),
+		InboundFeeSpecified: inboundFeeSpecified,
 	}
 
 	if ctx.IsSet("min_htlc_msat") {

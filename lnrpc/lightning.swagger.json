@@ -6592,6 +6592,10 @@
         "inbound_fee_rate_ppm": {
           "type": "integer",
           "format": "int32"
+        },
+        "inbound_fee_specified": {
+          "type": "boolean",
+          "description": "If true, inbound_base_fee_msat and inbound_fee_rate_ppm are applied."
         }
       }
     },

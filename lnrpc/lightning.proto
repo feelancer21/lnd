@@ -4404,6 +4404,9 @@ message PolicyUpdateRequest {
 
     int32 inbound_base_fee_msat = 10;
     int32 inbound_fee_rate_ppm = 11;
+
+    // If true, inbound_base_fee_msat and inbound_fee_rate_ppm are applied.
+    bool inbound_fee_specified = 12;
 }
 
 enum UpdateFailure {

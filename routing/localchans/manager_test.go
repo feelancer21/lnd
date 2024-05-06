@@ -33,6 +33,7 @@ func TestManager(t *testing.T) {
 		minHTLC            = lnwire.MilliSatoshi(2000)
 		expectedNumUpdates int
 		channelSet         []channel
+		updateInboundFee   bool
 	)
 
 	newPolicy := routing.ChannelPolicy{
@@ -242,7 +243,7 @@ func TestManager(t *testing.T) {
 			expectedNumUpdates = test.expectedNumUpdates
 
 			failedUpdates, err := manager.UpdatePolicy(test.newPolicy,
-				test.specifiedChanPoints...)
+				updateInboundFee, test.specifiedChanPoints...)
 
 			if len(failedUpdates) != len(test.expectedUpdateFailures) {
 				t.Fatalf("wrong number of failed policy updates")
