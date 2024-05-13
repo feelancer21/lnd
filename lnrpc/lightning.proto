@@ -4369,6 +4369,11 @@ message FeeReportResponse {
     uint64 month_fee_sum = 4;
 }
 
+message FeeSchema {
+    int32 base_fee_msat = 1;
+    int32 fee_rate_ppm = 2;
+}
+
 message PolicyUpdateRequest {
     oneof scope {
         // If set, then this update applies to all currently active channels.
@@ -4402,8 +4407,7 @@ message PolicyUpdateRequest {
     // If true, min_htlc_msat is applied.
     bool min_htlc_msat_specified = 8;
 
-    int32 inbound_base_fee_msat = 10;
-    int32 inbound_fee_rate_ppm = 11;
+    FeeSchema inbound = 10;
 }
 
 enum UpdateFailure {

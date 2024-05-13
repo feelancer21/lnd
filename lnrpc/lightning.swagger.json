@@ -4750,6 +4750,19 @@
         }
       }
     },
+    "lnrpcFeeSchema": {
+      "type": "object",
+      "properties": {
+        "base_fee_msat": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "fee_rate_ppm": {
+          "type": "integer",
+          "format": "int32"
+        }
+      }
+    },
     "lnrpcFloatMetric": {
       "type": "object",
       "properties": {
@@ -6585,13 +6598,8 @@
           "type": "boolean",
           "description": "If true, min_htlc_msat is applied."
         },
-        "inbound_base_fee_msat": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "inbound_fee_rate_ppm": {
-          "type": "integer",
-          "format": "int32"
+        "inbound": {
+          "$ref": "#/definitions/lnrpcFeeSchema"
         }
       }
     },

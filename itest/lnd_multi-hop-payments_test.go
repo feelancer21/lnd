@@ -257,9 +257,10 @@ func updateChannelPolicy(ht *lntest.HarnessTest, hn *node.HarnessNode,
 		Scope: &lnrpc.PolicyUpdateRequest_ChanPoint{
 			ChanPoint: chanPoint,
 		},
-		MaxHtlcMsat:        maxHtlc,
-		InboundBaseFeeMsat: inboundBaseFee,
-		InboundFeeRatePpm:  inboundFeeRate,
+		MaxHtlcMsat: maxHtlc,
+		Inbound: &lnrpc.FeeSchema{
+			BaseFeeMsat: inboundBaseFee,
+			FeeRatePpm:  inboundFeeRate},
 	}
 
 	hn.RPC.UpdateChannelPolicy(updateFeeReq)

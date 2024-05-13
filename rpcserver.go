@@ -7194,28 +7194,38 @@ func (r *rpcServer) UpdateChannelPolicy(ctx context.Context,
 			MaxTimeLockDelta)
 	}
 
+	// setting some default for testing purpose
+	inboundFee := models.InboundFee{
+		Base: int32(-69),
+		Rate: int32(-420),
+	}
+
 	// By default, positive inbound fees are rejected.
-	if !r.cfg.AcceptPositiveInboundFees {
-		if req.InboundBaseFeeMsat > 0 {
+	if !r.cfg.AcceptPositiveInboundFees && req.Inbound != nil {
+		if req.Inbound.BaseFeeMsat > 0 {
 			return nil, fmt.Errorf("positive values for inbound "+
 				"base fee msat are not supported: %v",
-				req.InboundBaseFeeMsat)
+				req.Inbound.BaseFeeMsat)
 		}
-		if req.InboundFeeRatePpm > 0 {
+		if req.Inbound.FeeRatePpm > 0 {
 			return nil, fmt.Errorf("positive values for inbound "+
 				"fee rate ppm are not supported: %v",
-				req.InboundFeeRatePpm)
+				req.Inbound.FeeRatePpm)
+		}
+	}
+
+	if req.Inbound != nil {
+		inboundFee = models.InboundFee{
+			Base: req.Inbound.BaseFeeMsat,
+			Rate: req.Inbound.FeeRatePpm,
 		}
 	}
 
 	baseFeeMsat := lnwire.MilliSatoshi(req.BaseFeeMsat)
 	feeSchema := routing.FeeSchema{
-		BaseFee: baseFeeMsat,
-		FeeRate: feeRateFixed,
-		InboundFee: models.InboundFee{
-			Base: req.InboundBaseFeeMsat,
-			Rate: req.InboundFeeRatePpm,
-		},
+		BaseFee:    baseFeeMsat,
+		FeeRate:    feeRateFixed,
+		InboundFee: inboundFee,
 	}
 
 	maxHtlc := lnwire.MilliSatoshi(req.MaxHtlcMsat)
