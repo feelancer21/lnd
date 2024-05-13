@@ -9,6 +9,7 @@ import (
 	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/channeldb/models"
 	"github.com/lightningnetwork/lnd/discovery"
+	"github.com/lightningnetwork/lnd/fn"
 	"github.com/lightningnetwork/lnd/kvdb"
 	"github.com/lightningnetwork/lnd/lnrpc"
 	"github.com/lightningnetwork/lnd/lnwire"
@@ -87,8 +88,11 @@ func (r *Manager) UpdatePolicy(newSchema routing.ChannelPolicy,
 		// will be used to report invalid channels later on.
 		delete(unprocessedChans, info.ChannelPoint)
 
-		// Apply the new policy to the edge.
-		err := r.updateEdge(tx, info.ChannelPoint, edge, newSchema)
+		var edgeInboundFee models.InboundFee
+
+		// Apply the new policy to the edge and to edgeInboundFee.
+		err := r.updateEdge(tx, info.ChannelPoint, edge,
+			newSchema, &edgeInboundFee)
 		if err != nil {
 			failedUpdates = append(failedUpdates,
 				makeFailureItem(info.ChannelPoint,
@@ -112,7 +116,7 @@ func (r *Manager) UpdatePolicy(newSchema routing.ChannelPolicy,
 			TimeLockDelta: uint32(edge.TimeLockDelta),
 			MinHTLCOut:    edge.MinHTLC,
 			MaxHTLC:       edge.MaxHTLC,
-			InboundFee:    newSchema.InboundFee,
+			InboundFee:    edgeInboundFee,
 		}
 
 		return nil
@@ -173,8 +177,8 @@ func (r *Manager) UpdatePolicy(newSchema routing.ChannelPolicy,
 
 // updateEdge updates the given edge with the new schema.
 func (r *Manager) updateEdge(tx kvdb.RTx, chanPoint wire.OutPoint,
-	edge *models.ChannelEdgePolicy,
-	newSchema routing.ChannelPolicy) error {
+	edge *models.ChannelEdgePolicy, newSchema routing.ChannelPolicy,
+	edgeInboundFee *models.InboundFee) error {
 
 	// Update forwarding fee scheme and required time lock delta.
 	edge.FeeBaseMSat = newSchema.BaseFee
@@ -182,10 +186,33 @@ func (r *Manager) updateEdge(tx kvdb.RTx, chanPoint wire.OutPoint,
 		newSchema.FeeRate,
 	)
 
-	inboundFee := newSchema.InboundFee.ToWire()
-	if err := edge.ExtraOpaqueData.PackRecords(&inboundFee); err != nil {
-		return err
+	var inboundFee models.InboundFee
+	// If inbound fees are set, we update the edge with them. Otherwise,
+	// we extract the currently set inbound fee from the ExtraOpaqueData
+	// and use it.
+	if !newSchema.InboundFee.IsNone() {
+		err := fn.MapOptionZ(newSchema.InboundFee,
+			func(f models.InboundFee) error {
+				inboundFee = f
+				inboundWireFee := f.ToWire()
+				return edge.ExtraOpaqueData.PackRecords(
+					&inboundWireFee,
+				)
+			})
+		if err != nil {
+			return err
+		}
+	} else {
+		var inboundWireFee lnwire.Fee
+		_, err := edge.ExtraOpaqueData.ExtractRecords(&inboundWireFee)
+		if err != nil {
+			return err
+		}
+		inboundFee = models.NewInboundFeeFromWire(inboundWireFee)
 	}
+
+	edgeInboundFee.Base = inboundFee.Base
+	edgeInboundFee.Rate = inboundFee.Rate
 
 	edge.TimeLockDelta = uint16(newSchema.TimeLockDelta)
 
