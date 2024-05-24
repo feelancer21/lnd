@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -77,6 +78,7 @@ func walletCommands() []cli.Command {
 			Usage:       "Interact with the wallet.",
 			Description: "",
 			Subcommands: []cli.Command{
+				estimateFeeRateCommand,
 				pendingSweepsCommand,
 				bumpFeeCommand,
 				bumpCloseFeeCommand,
@@ -122,6 +124,45 @@ func getWalletClient(ctx *cli.Context) (walletrpc.WalletKitClient, func()) {
 		conn.Close()
 	}
 	return walletrpc.NewWalletKitClient(conn), cleanUp
+}
+
+var estimateFeeRateCommand = cli.Command{
+	Name: "estimatefeerate",
+	Usage: "Estimates the on-chain fee rate to achieve a confirmation " +
+		"target.",
+	ArgsUsage: "conf_target",
+	Description: `
+	Returns the fee rate estimate for on-chain transactions in sat/kw to
+	achieve a given confirmation target. The source of the fee rate depends
+	on the configuration and is either the on-chain backend or alternatively
+	an external URL.
+	`,
+	Action: actionDecorator(estimateFeeRate),
+}
+
+func estimateFeeRate(ctx *cli.Context) error {
+	ctxc := getContext()
+	client, cleanUp := getWalletClient(ctx)
+	defer cleanUp()
+
+	confTarget, err := strconv.ParseInt(ctx.Args().First(), 10, 64)
+	if err != nil {
+		return cli.ShowCommandHelp(ctx, "estimatefeerate")
+	}
+
+	if confTarget <= 0 || confTarget > math.MaxInt32 {
+		return errors.New("conf_target out of range")
+	}
+
+	resp, err := client.EstimateFee(ctxc, &walletrpc.EstimateFeeRequest{
+		ConfTarget: int32(confTarget)})
+	if err != nil {
+		return err
+	}
+
+	printJSON(resp)
+
+	return nil
 }
 
 var pendingSweepsCommand = cli.Command{

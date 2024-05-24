@@ -288,6 +288,10 @@
   [`make install-all`](https://github.com/lightningnetwork/lnd/pull/8739) in 
   the Makefile.
 
+* The [`lncli wallet estimatefeerate`](https://github.com/lightningnetwork/lnd/pull/8730)
+  command returns the fee rate estimate for on-chain transactions in sat/kw to
+  achieve a given confirmation target.
+
 # Improvements
 ## Functional Updates
 ### Tlv
