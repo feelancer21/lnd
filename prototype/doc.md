@@ -15,16 +15,12 @@ $$
 
 with
 
-$$
-f(x)=(x+r_ox+b_o)+(x+r_ox+b_o)\cdot r_i +b_i
-$$
+$$f(x)=(x+r_ox+b_o)+(x+r_ox+b_o)\cdot r_i +b_i$$
 
 The function $f$ calculates the incoming amount ignoring the floor by the
 outgoing amount. It becomes $f(x)=m\cdot x +n$ if we set 
 
-$$
-m:=1+r_o+r_i+r_o\cdot r_i=(1+r_o)\cdot (1+ r_i)
-$$
+\[m:=1+r_o+r_i+r_o\cdot r_i=(1+r_o)\cdot (1+ r_i)\]
 
 $$
 n:=b_o+b_i+b_o\cdot r_i
