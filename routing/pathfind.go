@@ -737,6 +737,13 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 		amountToSend := toNodeDist.netAmountReceived +
 			lnwire.MilliSatoshi(inboundFee)
 
+		// Check if accumulated fees would exceed fee limit when this
+		// node would be added to the path.
+		totalFee := int64(amountToSend) - int64(amt)
+		if totalFee > 0 && lnwire.MilliSatoshi(totalFee) > r.FeeLimit {
+			return
+		}
+
 		// Request the success probability for this edge.
 		edgeProbability := r.ProbabilitySource(
 			fromVertex, toNodeDist.node, amountToSend,
@@ -792,13 +799,6 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 		// fee it charges plus this node's inbound fee.
 		netAmountToReceive := amountToSend +
 			lnwire.MilliSatoshi(outboundFee)
-
-		// Check if accumulated fees would exceed fee limit when this
-		// node would be added to the path.
-		totalFee := int64(netAmountToReceive) - int64(amt)
-		if totalFee > 0 && lnwire.MilliSatoshi(totalFee) > r.FeeLimit {
-			return
-		}
 
 		// Calculate total probability of successfully reaching target
 		// by multiplying the probabilities. Both this edge and the rest
