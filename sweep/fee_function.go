@@ -296,6 +296,12 @@ func (l *LinearFeeFunction) estimateFeeRate(
 		log.Infof("Conf target %v is greater than max block target, "+
 			"using min relay fee rate %v", confTarget, minFeeRate)
 
+		// The minFeeRate has to be capped by the endingFeeRate, which
+		// is also maximum budget.
+		// if minFeeRate > l.endingFeeRate {
+		// 	minFeeRate = l.endingFeeRate
+		// }
+
 		return minFeeRate, nil
 	}
 

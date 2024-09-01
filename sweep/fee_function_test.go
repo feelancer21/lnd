@@ -1,6 +1,7 @@
 package sweep
 
 import (
+	"math"
 	"testing"
 
 	"github.com/lightningnetwork/lnd/fn"
@@ -134,7 +135,7 @@ func TestLinearFeeFunctionNewEsimator(t *testing.T) {
 
 	// When the conf target is >= 1008, the min relay fee should be used.
 	//
-	// Mock the fee estimator to reutrn the fee rate.
+	// Mock the fee estimator to return the fee rate.
 	estimator.On("RelayFeePerKW").Return(minRelayFeeRate).Once()
 
 	largeConf := uint32(1008)
@@ -150,6 +151,24 @@ func TestLinearFeeFunctionNewEsimator(t *testing.T) {
 	rt.Equal(minRelayFeeRate, f.currentFeeRate)
 	rt.NotZero(f.deltaFeeRate)
 	rt.Equal(largeConf-1, f.width)
+
+	// The test with a conf target >= 1008 is repeated for the case that
+	// min relay fee exceeds the max fee rate.
+
+	estimator.On("RelayFeePerKW").Return(maxFeeRate + 1).Once()
+	f, err = NewLinearFeeFunction(
+		maxFeeRate, largeConf, estimator, noStartFeeRate,
+	)
+	rt.NoError(err)
+	rt.NotNil(f)
+
+	// Assert the internal state.
+	rt.Equal(maxFeeRate+1, f.startingFeeRate)
+	rt.Equal(maxFeeRate, f.endingFeeRate)
+	rt.Equal(maxFeeRate+1, f.currentFeeRate)
+	rt.Equal(mSatPerKWeight(math.MaxUint64), f.deltaFeeRate)
+	rt.Equal(largeConf-1, f.width)
+
 }
 
 // TestLinearFeeFunctionNewSuccess tests we can create the fee function
