@@ -7094,7 +7094,7 @@ func newOutgoingHtlcResolution(signer input.Signer,
 			Expiry:         htlc.RefundTimeout,
 			ClaimOutpoint:  op,
 			SweepSignDesc:  signDesc,
-			CsvDelay:       csvDelay,
+			CsvDelay:       htlcCsvDelay,
 			ResolutionBlob: resolutionBlob,
 		}, nil
 	}
