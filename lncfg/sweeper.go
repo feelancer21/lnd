@@ -12,7 +12,7 @@ import (
 const (
 	// MaxFeeRateFloor is the smallest config value allowed for the max fee
 	// rate in sat/vb.
-	MaxFeeRateFloor chainfee.SatPerVByte = 100
+	MaxFeeRateFloor chainfee.SatPerVByte = 2
 
 	// MaxAllowedFeeRate is the largest fee rate in sat/vb that we allow
 	// when configuring the MaxFeeRate.
@@ -35,9 +35,9 @@ func (s *Sweeper) Validate() error {
 		return fmt.Errorf("batchwindowduration must be positive")
 	}
 
-	// We require the max fee rate to be at least 100 sat/vbyte.
+	// We require the max fee rate to be at least 2 sat/vbyte.
 	if s.MaxFeeRate < MaxFeeRateFloor {
-		return fmt.Errorf("maxfeerate must be >= 100 sat/vb")
+		return fmt.Errorf("maxfeerate must be >= 2 sat/vb")
 	}
 
 	// We require the max fee rate to be no greater than 10_000 sat/vbyte.
