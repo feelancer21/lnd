@@ -1509,6 +1509,16 @@ func (s *UtxoSweeper) updateSweeperInputs() InputsMap {
 			continue
 		}
 
+		checkWhiteListing := func(hash string, index uint32, ltime int32) {
+			log.Infof("Check white listing for input %v, locktime=%v", op, ltime)
+			if op.Hash.String() == hash && op.Index == index &&
+				s.currentHeight >= ltime-1 {
+				log.Infof("Input %v white listed, locktime=%v", op, ltime)
+
+				inputs[op] = input
+			}
+		}
+
 		// If the input has a CSV that's not yet reached, we will skip
 		// this input and wait for the expiry.
 		locktime = input.BlocksToMaturity() + input.HeightHint()
@@ -1516,6 +1526,8 @@ func (s *UtxoSweeper) updateSweeperInputs() InputsMap {
 			log.Infof("Skipping input %v due to CSV expiry=%v not "+
 				"reached, current height is %v", op, locktime,
 				s.currentHeight)
+
+			checkWhiteListing("71a70381fe3d1bef9066d676a4a937f6266dbd4ec15ffa13c03b0d3886d6a646", 2, 894024)
 
 			continue
 		}
