@@ -161,6 +161,11 @@ func (i *inputKit) HeightHint() uint32 {
 // must be built on top of the confirmation height before the output can be
 // spent. For non-CSV locked inputs this is always zero.
 func (i *inputKit) BlocksToMaturity() uint32 {
+
+	if i.witnessType == HtlcOfferedRemoteTimeout {
+		return 1
+	}
+
 	return i.blockToMaturity
 }
 

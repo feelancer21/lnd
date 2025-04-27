@@ -1512,6 +1512,8 @@ func (s *UtxoSweeper) updateSweeperInputs() InputsMap {
 		// If the input has a CSV that's not yet reached, we will skip
 		// this input and wait for the expiry.
 		locktime = input.BlocksToMaturity() + input.HeightHint()
+		log.Infof("Input %v has BlocksToMaturity=%v, heightHint=%v",
+			op, input.BlocksToMaturity(), input.HeightHint())
 		if s.currentHeight < int32(locktime)-1 {
 			log.Infof("Skipping input %v due to CSV expiry=%v not "+
 				"reached, current height is %v", op, locktime,
