@@ -32,25 +32,39 @@ var (
 	node2 = route.Vertex{11}
 )
 
+var (
+	singleChanID = "singleChanID"
+	multiChanID  = "multiChanID"
+	bothChanIds  = "bothChanIds"
+)
+
 // TestQueryRoutes asserts that query routes rpc parameters are properly parsed
 // and passed onto path finding.
 func TestQueryRoutes(t *testing.T) {
 	t.Run("no mission control", func(t *testing.T) {
-		testQueryRoutes(t, false, false, true)
+		testQueryRoutes(t, false, false, true, singleChanID)
 	})
 	t.Run("no mission control and msat", func(t *testing.T) {
-		testQueryRoutes(t, false, true, true)
+		testQueryRoutes(t, false, true, true, singleChanID)
 	})
 	t.Run("with mission control", func(t *testing.T) {
-		testQueryRoutes(t, true, false, true)
+		testQueryRoutes(t, true, false, true, singleChanID)
 	})
 	t.Run("no mission control bad cltv limit", func(t *testing.T) {
-		testQueryRoutes(t, false, false, false)
+		testQueryRoutes(t, false, false, false, singleChanID)
+	})
+
+	t.Run("both outgoing chan id and chan ids", func(t *testing.T) {
+		testQueryRoutes(t, true, false, true, bothChanIds)
+	})
+
+	t.Run("multiple outgoing chan ids", func(t *testing.T) {
+		testQueryRoutes(t, false, true, true, multiChanID)
 	})
 }
 
 func testQueryRoutes(t *testing.T, useMissionControl bool, useMsat bool,
-	setTimelock bool) {
+	setTimelock bool, outgoingChanConfig string) {
 
 	ignoreNodeBytes, err := hex.DecodeString(ignoreNodeKey)
 	if err != nil {
@@ -66,8 +80,9 @@ func testQueryRoutes(t *testing.T, useMissionControl bool, useMsat bool,
 	}
 
 	var (
-		lastHop      = route.Vertex{64}
-		outgoingChan = uint64(383322)
+		lastHop         = route.Vertex{64}
+		outgoingChan    = uint64(383322)
+		outgoingChanIds = []uint64{383322, 383323}
 	)
 
 	hintNode, err := route.NewVertexFromStr(hintNodeKey)
@@ -100,7 +115,6 @@ func testQueryRoutes(t *testing.T, useMissionControl bool, useMsat bool,
 		}},
 		UseMissionControl: useMissionControl,
 		LastHopPubkey:     lastHop[:],
-		OutgoingChanId:    outgoingChan,
 		DestFeatures:      []lnrpc.FeatureBit{lnrpc.FeatureBit_MPP_OPT},
 		RouteHints:        rpcRouteHints,
 	}
@@ -120,6 +134,18 @@ func testQueryRoutes(t *testing.T, useMissionControl bool, useMsat bool,
 				Fixed: 250,
 			},
 		}
+	}
+
+	switch outgoingChanConfig {
+	case singleChanID:
+		request.OutgoingChanId = outgoingChan
+
+	case multiChanID:
+		request.OutgoingChanIds = outgoingChanIds
+
+	case bothChanIds:
+		request.OutgoingChanId = outgoingChan
+		request.OutgoingChanIds = outgoingChanIds
 	}
 
 	findRoute := func(req *routing.RouteRequest) (*route.Route, float64,
@@ -163,8 +189,18 @@ func testQueryRoutes(t *testing.T, useMissionControl bool, useMsat bool,
 			t.Fatal("unexpected last hop")
 		}
 
-		if restrictions.OutgoingChannelIDs[0] != outgoingChan {
-			t.Fatal("unexpected outgoing channel id")
+		switch outgoingChanConfig {
+		case singleChanID:
+			require.Equal(
+				t, restrictions.OutgoingChannelIDs,
+				[]uint64{outgoingChan},
+			)
+
+		case multiChanID:
+			require.Equal(
+				t, restrictions.OutgoingChannelIDs,
+				outgoingChanIds,
+			)
 		}
 
 		if !restrictions.DestFeatures.HasFeature(lnwire.MPPOptional) {
@@ -227,6 +263,13 @@ func testQueryRoutes(t *testing.T, useMissionControl bool, useMsat bool,
 	}
 
 	resp, err := backend.QueryRoutes(context.Background(), request)
+
+	// If we're using both OutgoingChanId and OutgoingChanIds, we should get
+	// an error.
+	if outgoingChanConfig == bothChanIds {
+		require.Error(t, err)
+		return
+	}
 
 	// If no MaxTotalTimelock was set for the QueryRoutes request, make
 	// sure an error was returned.
