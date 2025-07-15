@@ -54,4 +54,13 @@ http:
     - selector: routerrpc.Router.XDeleteLocalChanAliases
       post: "/v2/router/x/deletealiases"
       body: "*"
+    - selector: routerrpc.Router.XImportImputedCosts
+      post: "/v2/router/x/importimputedcosts"
+      body: "*"
+    - selector: routerrpc.Router.XQueryImputedCosts
+      post: "/v2/router/x/queryimputedcosts"
+      body: "*"
+    - selector: routerrpc.Router.XDeleteImputedCosts
+      post: "/v2/router/x/deleteimputedcosts"
+      body: "*"
 
