@@ -580,6 +580,39 @@
         ]
       }
     },
+    "/v2/router/x/deleteimputedcosts": {
+      "post": {
+        "summary": "XDeleteImputedCosts is an experimental API that removes the specified\nnamespaces and all their associated imputed cost configurations.",
+        "operationId": "Router_XDeleteImputedCosts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/routerrpcDeleteImputedCostsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/routerrpcDeleteImputedCostsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Router"
+        ]
+      }
+    },
     "/v2/router/x/importhistory": {
       "post": {
         "summary": "lncli: `importmc`\nXImportMissionControl is an experimental API that imports the state provided\nto the internal mission control's state, using all results which are more\nrecent than our existing values. These values will only be imported\nin-memory, and will not be persisted across restarts.",
@@ -605,6 +638,72 @@
             "required": true,
             "schema": {
               "$ref": "#/definitions/routerrpcXImportMissionControlRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Router"
+        ]
+      }
+    },
+    "/v2/router/x/importimputedcosts": {
+      "post": {
+        "summary": "XImportImputedCosts is an experimental API that imports imputed cost data\nfor routing decisions. Imputed costs can be used to influence route\nselection by applying additional virtual costs to specific node pairs.\nThese values will only be imported in-memory, and will not be persisted\nacross restarts.",
+        "operationId": "Router_XImportImputedCosts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/routerrpcImportImputedCostsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/routerrpcImportImputedCostsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Router"
+        ]
+      }
+    },
+    "/v2/router/x/queryimputedcosts": {
+      "post": {
+        "summary": "XQueryImputedCosts is an experimental API that retrieves the current\nimputed cost configurations for the specified namespaces.",
+        "operationId": "Router_XQueryImputedCosts",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/routerrpcQueryImputedCostsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/routerrpcQueryImputedCostsRequest"
             }
           }
         ],
@@ -1007,6 +1106,20 @@
         }
       }
     },
+    "lnrpcImputedCostRestriction": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "The name of the namespace for calculating the imputed costs."
+        },
+        "total_cost_limit_msat": {
+          "type": "string",
+          "format": "int64",
+          "description": "The maximum number of millisatoshis that may be incurred, including routing\nfees and imputed costs."
+        }
+      }
+    },
     "lnrpcMPPRecord": {
       "type": "object",
       "properties": {
@@ -1371,6 +1484,21 @@
         }
       }
     },
+    "routerrpcDeleteImputedCostsRequest": {
+      "type": "object",
+      "properties": {
+        "namespaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The namespaces to delete. All imputed cost configurations within these\nnamespaces will be permanently removed."
+        }
+      }
+    },
+    "routerrpcDeleteImputedCostsResponse": {
+      "type": "object"
+    },
     "routerrpcFailureDetail": {
       "type": "string",
       "enum": [
@@ -1631,6 +1759,91 @@
         }
       }
     },
+    "routerrpcImportImputedCostsRequest": {
+      "type": "object",
+      "properties": {
+        "namespaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/routerrpcImputedCostNamespace"
+          },
+          "description": "The imputed cost namespaces to import. Each namespace contains its own\nset of imputed cost policies for specific node pairs."
+        },
+        "reset": {
+          "type": "boolean",
+          "description": "Controls the import behavior. If true, all mentioned namespaces are\ncompletely replaced. If false, existing namespaces are updated and\nnon-existing namespaces are created."
+        }
+      }
+    },
+    "routerrpcImportImputedCostsResponse": {
+      "type": "object"
+    },
+    "routerrpcImputedCostNamespace": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The namespace for the imputed cost."
+        },
+        "default_parameters": {
+          "$ref": "#/definitions/routerrpcImputedCostParameters",
+          "description": "This is the default parameters applied to all node pairs that do not have\nexplicitly defined parameters."
+        },
+        "pairs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/routerrpcImputedCostPair"
+          },
+          "description": "The imputed costs for each node pair."
+        }
+      }
+    },
+    "routerrpcImputedCostPair": {
+      "type": "object",
+      "properties": {
+        "node_from": {
+          "type": "string",
+          "format": "byte",
+          "description": "The source node pubkey of the pair."
+        },
+        "node_to": {
+          "type": "string",
+          "format": "byte",
+          "description": "The destination node pubkey of the pair."
+        },
+        "parameters": {
+          "$ref": "#/definitions/routerrpcImputedCostParameters",
+          "description": "The imputed cost parameters used for this pair. If not set, an existing\nparameters is deleted and the default parameters is used."
+        }
+      }
+    },
+    "routerrpcImputedCostParameters": {
+      "type": "object",
+      "properties": {
+        "cost_rate_ppm": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Imputed costs in parts per million (ppm) of the amount sent. These costs\nonly incur if the payment is successful. Due to pathfinding restrictions,\nonly non-negative values are currently allowed."
+        },
+        "cost_base_msat": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Base imputed cost in millisatoshis. This cost only incurs if the payment\nis successful. Due to pathfinding restrictions, only non-negative values\nare currently allowed."
+        },
+        "attempt_cost_rate_ppm": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Attempt costs in parts per million (ppm) of the amount sent. These costs\nincur regardless of whether the payment is successful or not. Due to\npathfinding restrictions, only non-negative values are currently allowed."
+        },
+        "attempt_cost_base_msat": {
+          "type": "integer",
+          "format": "int32",
+          "description": "Base attempt cost in millisatoshis. This cost incurs regardless of\nwhether the payment is successful or not. Due to pathfinding\nrestrictions, only non-negative values are currently allowed."
+        }
+      }
+    },
     "routerrpcLinkFailEvent": {
       "type": "object",
       "properties": {
@@ -1779,6 +1992,31 @@
             "$ref": "#/definitions/lnrpcHTLCAttempt"
           },
           "description": "The HTLCs made in attempt to settle the payment [EXPERIMENTAL]."
+        }
+      }
+    },
+    "routerrpcQueryImputedCostsRequest": {
+      "type": "object",
+      "properties": {
+        "namespaces": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The namespaces to query imputed costs for. If empty, all existing\nnamespaces will be returned."
+        }
+      }
+    },
+    "routerrpcQueryImputedCostsResponse": {
+      "type": "object",
+      "properties": {
+        "namespaces": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/routerrpcImputedCostNamespace"
+          },
+          "description": "The imputed cost namespaces with their configurations."
         }
       }
     },
@@ -2006,6 +2244,10 @@
             "format": "byte"
           },
           "description": "An optional field that can be used to pass an arbitrary set of TLV records\nto the first hop peer of this payment. This can be used to pass application\nspecific data during the payment attempt. Record types are required to be in\nthe custom range \u003e= 65536. When using REST, the values must be encoded as\nbase64."
+        },
+        "imputed_cost_restrictions": {
+          "$ref": "#/definitions/lnrpcImputedCostRestriction",
+          "description": "An optional restriction to limit routing fees and imputed costs."
         }
       }
     },
