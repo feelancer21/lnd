@@ -195,6 +195,32 @@ service Router {
     */
     rpc XDeleteLocalChanAliases (DeleteAliasesRequest)
         returns (DeleteAliasesResponse);
+
+    /*
+    XImportImputedCosts is an experimental API that imports imputed cost data
+    for routing decisions. Imputed costs allow users to influence route
+    selection by applying additional virtual costs or penalties to specific
+    node pairs.
+    These values are only stored in-memory and will not be persisted across
+    restarts.
+    */
+    rpc XImportImputedCosts (ImportImputedCostsRequest)
+        returns (ImportImputedCostsResponse);
+
+    /*
+    XQueryImputedCosts is an experimental API that retrieves the currently
+    active imputed cost configurations for the specified namespaces. If no
+    namespaces are specified, all configured namespaces will be returned.
+    */
+    rpc XQueryImputedCosts (QueryImputedCostsRequest)
+        returns (QueryImputedCostsResponse);
+
+    /*
+    XDeleteImputedCosts is an experimental API that permanently removes the
+    specified namespaces and all their associated imputed cost configurations.
+    */
+    rpc XDeleteImputedCosts (DeleteImputedCostsRequest)
+        returns (DeleteImputedCostsResponse);
 }
 
 message SendPaymentRequest {
@@ -368,6 +394,12 @@ message SendPaymentRequest {
     base64.
     */
     map<uint64, bytes> first_hop_custom_records = 25;
+
+    /*
+    If set, imputed costs are taken into account in the search for the optimal
+    path.
+    */
+    lnrpc.ImputedCostRestriction imputed_cost_restriction = 26;
 }
 
 message TrackPaymentRequest {
@@ -1116,4 +1148,94 @@ message DeleteAliasesRequest {
 
 message DeleteAliasesResponse {
     repeated lnrpc.AliasMap alias_maps = 1;
+}
+
+message ImportImputedCostsRequest {
+    // The imputed cost namespaces to import. Each namespace contains its own
+    // isolated set of imputed cost parameters for specific node pairs.
+    // Namespaces allow for organizing different cost strategies.
+    repeated ImputedCostNamespace namespaces = 1;
+
+    // Controls the import behavior. If true, all specified namespaces are
+    // completely replaced with the provided data. If false, existing namespaces
+    // are updated with new data and non-existing namespaces are created.
+    bool reset = 2;
+}
+
+message ImportImputedCostsResponse {
+}
+
+message ImputedCostNamespace {
+    // The unique identifier for this imputed cost namespace.
+    string name = 1;
+
+    // The default parameters applied to all node pairs within this namespace
+    // that do not have explicitly defined parameters. This provides a fallback
+    // configuration for pairs not individually specified.
+    ImputedCostParameters default_parameters = 2;
+
+    // The specific imputed cost configurations for individual node pairs.
+    repeated ImputedCostPair pairs = 3;
+}
+
+message ImputedCostPair {
+    // The source node public key of the routing pair.
+    bytes node_from = 1;
+
+    // The destination node public key of the routing pair.
+    bytes node_to = 2;
+
+    // The imputed cost parameters to apply for this specific node pair. If not
+    // set, any existing parameters for this pair are deleted and the
+    // namespace's default parameters will be used instead.
+    ImputedCostParameters parameters = 3;
+}
+
+message ImputedCostParameters {
+    // Success-based imputed cost rate in parts per million (ppm) of the amount
+    // sent. These virtual costs are only applied when the payment succeeds,
+    // and due to pathfinding algorithm constraints, only non-negative values
+    // are currently supported.
+    int32 cost_rate_ppm = 1;
+
+    // Success-based base imputed cost in millisatoshis. This fixed virtual cost
+    // is only applied when the payment succeeds, regardless of the payment
+    // amount. Due to pathfinding algorithm constraints, only non-negative
+    // values are currently supported.
+    int32 cost_base_msat = 2;
+
+    // Attempt-based imputed cost rate in parts per million (ppm) of the amount
+    // sent. These virtual costs are applied for every routing attempt through
+    // this node pair, regardless of whether the payment ultimately succeeds or
+    // fails. Due to pathfinding algorithm constraints, only non-negative values
+    // are currently supported.
+    int32 attempt_cost_rate_ppm = 3;
+
+    // Attempt-based base imputed cost in millisatoshis. This fixed virtual cost
+    // is applied for every routing attempt through this node pair, regardless
+    // of the payment amount or ultimate success/failure. Due to pathfinding
+    // algorithm constraints, only non-negative values are currently supported.
+    int32 attempt_cost_base_msat = 4;
+}
+
+message QueryImputedCostsRequest {
+    // The specific namespaces to query imputed costs for. If this list is
+    // empty, all existing namespaces and their configurations will be returned.
+    repeated string namespaces = 1;
+}
+
+message QueryImputedCostsResponse {
+    // The requested imputed cost namespaces with their complete configurations,
+    // including default parameters and individual node pair settings.
+    repeated ImputedCostNamespace namespaces = 1;
+}
+
+message DeleteImputedCostsRequest {
+    // The namespaces to permanently delete. All imputed cost configurations
+    // within these namespaces will be immediately removed and cannot be
+    // recovered. This will affect ongoing and future routing decisions.
+    repeated string namespaces = 1;
+}
+
+message DeleteImputedCostsResponse {
 }
