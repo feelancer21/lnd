@@ -484,6 +484,8 @@ type RestrictParams struct {
 	// FirstHopCustomRecords includes any records that should be included in
 	// the update_add_htlc message towards our peer.
 	FirstHopCustomRecords lnwire.CustomRecords
+
+	ImputedCostControl *ImputedCostControl
 }
 
 // PathFindingConfig defines global parameters that control the trade-off in
@@ -915,6 +917,30 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 			absoluteAttemptCost,
 		)
 
+		imputedCost := toNodeDist.imputedCost
+		imputedAttemptCost := toNodeDist.imputedAttemptCost
+		if r.ImputedCostControl != nil {
+			// processPair updates the imputed cost and imputed
+			// attempt cost and checks the limit boundaries. In case
+			// any limit is reached, it returns an error.
+			err = r.ImputedCostControl.processPair(
+				fromVertex, toNodeDist.node, netAmountToReceive,
+				totalFee, absoluteAttemptCost, &imputedCost,
+				&imputedAttemptCost,
+			)
+			if err != nil {
+				return
+			}
+			// getProbabilityBasedDist is a linear function, given
+			// the same probability, hence we can just add the
+			// distances.
+			tempDist += getProbabilityBasedDist(
+				int64(imputedCost), probability,
+				float64(imputedAttemptCost),
+			)
+
+		}
+
 		// If there is already a best route stored, compare this
 		// candidate route with the best route so far.
 		current, ok := distance[fromVertex]
@@ -979,15 +1005,17 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 		// The new better distance is recorded, and also our "next hop"
 		// map is populated with this edge.
 		withDist := &nodeWithDist{
-			dist:              tempDist,
-			weight:            tempWeight,
-			node:              fromVertex,
-			netAmountReceived: netAmountToReceive,
-			outboundFee:       lnwire.MilliSatoshi(outboundFee),
-			incomingCltv:      incomingCltv,
-			probability:       probability,
-			nextHop:           edge,
-			routingInfoSize:   routingInfoSize,
+			dist:               tempDist,
+			weight:             tempWeight,
+			node:               fromVertex,
+			netAmountReceived:  netAmountToReceive,
+			outboundFee:        lnwire.MilliSatoshi(outboundFee),
+			incomingCltv:       incomingCltv,
+			probability:        probability,
+			nextHop:            edge,
+			routingInfoSize:    routingInfoSize,
+			imputedCost:        imputedCost,
+			imputedAttemptCost: imputedAttemptCost,
 		}
 		distance[fromVertex] = withDist
 
@@ -1400,6 +1428,7 @@ func processNodeForBlindedPath(g Graph, node route.Vertex,
 // account the success probability and the (virtual) cost of a failed payment
 // attempt.
 //
+// TODO(feelancer21): Update the comment because of the imputed cost
 // Derivation:
 //
 // Suppose there are two routes A and B with fees Fa and Fb and success
