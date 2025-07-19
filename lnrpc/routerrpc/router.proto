@@ -195,6 +195,30 @@ service Router {
     */
     rpc XDeleteLocalChanAliases (DeleteAliasesRequest)
         returns (DeleteAliasesResponse);
+
+    /*
+    XImportImputedCosts is an experimental API that imports imputed cost data
+    for routing decisions. Imputed costs can be used to influence route
+    selection by applying additional virtual costs to specific node pairs.
+    These values will only be imported in-memory, and will not be persisted
+    across restarts.
+    */
+    rpc XImportImputedCosts (ImportImputedCostsRequest)
+        returns (ImportImputedCostsResponse);
+
+    /*
+    XQueryImputedCosts is an experimental API that retrieves the current
+    imputed cost configurations for the specified namespaces.
+    */
+    rpc XQueryImputedCosts (QueryImputedCostsRequest)
+        returns (QueryImputedCostsResponse);
+
+    /*
+    XDeleteImputedCosts is an experimental API that removes the specified
+    namespaces and all their associated imputed cost configurations.
+    */
+    rpc XDeleteImputedCosts (DeleteImputedCostsRequest)
+        returns (DeleteImputedCostsResponse);
 }
 
 message SendPaymentRequest {
@@ -368,6 +392,11 @@ message SendPaymentRequest {
     base64.
     */
     map<uint64, bytes> first_hop_custom_records = 25;
+
+    /*
+    An optional restriction to limit routing fees and imputed costs.
+    */
+    lnrpc.ImputedCostRestriction imputed_cost_restrictions = 26;
 }
 
 message TrackPaymentRequest {
@@ -1116,4 +1145,84 @@ message DeleteAliasesRequest {
 
 message DeleteAliasesResponse {
     repeated lnrpc.AliasMap alias_maps = 1;
+}
+
+message ImportImputedCostsRequest {
+    // The imputed cost namespaces to import. Each namespace contains its own
+    // set of imputed cost policies for specific node pairs.
+    repeated ImputedCostNamespace namespaces = 1;
+
+    // Controls the import behavior. If true, all mentioned namespaces are
+    // completely replaced. If false, existing namespaces are updated and
+    // non-existing namespaces are created.
+    bool reset = 2;
+}
+
+message ImportImputedCostsResponse {
+}
+
+message ImputedCostNamespace {
+    // The namespace for the imputed cost.
+    string name = 1;
+
+    // This is the default parameters applied to all node pairs that do not have
+    // explicitly defined parameters.
+    ImputedCostParameters default_parameters = 2;
+
+    // The imputed costs for each node pair.
+    repeated ImputedCostPair pairs = 3;
+}
+
+message ImputedCostPair {
+    // The source node pubkey of the pair.
+    bytes node_from = 1;
+
+    // The destination node pubkey of the pair.
+    bytes node_to = 2;
+
+    // The imputed cost parameters used for this pair. If not set, an existing
+    // parameters is deleted and the default parameters is used.
+    ImputedCostParameters parameters = 3;
+}
+
+message ImputedCostParameters {
+    // Imputed costs in parts per million (ppm) of the amount sent. These costs
+    // only incur if the payment is successful. Due to pathfinding restrictions,
+    // only non-negative values are currently allowed.
+    int32 cost_rate_ppm = 1;
+
+    // Base imputed cost in millisatoshis. This cost only incurs if the payment
+    // is successful. Due to pathfinding restrictions, only non-negative values
+    // are currently allowed.
+    int32 cost_base_msat = 2;
+
+    // Attempt costs in parts per million (ppm) of the amount sent. These costs
+    // incur regardless of whether the payment is successful or not. Due to
+    // pathfinding restrictions, only non-negative values are currently allowed.
+    int32 attempt_cost_rate_ppm = 3;
+
+    // Base attempt cost in millisatoshis. This cost incurs regardless of
+    // whether the payment is successful or not. Due to pathfinding
+    // restrictions, only non-negative values are currently allowed.
+    int32 attempt_cost_base_msat = 4;
+}
+
+message QueryImputedCostsRequest {
+    // The namespaces to query imputed costs for. If empty, all existing
+    // namespaces will be returned.
+    repeated string namespaces = 1;
+}
+
+message QueryImputedCostsResponse {
+    // The imputed cost namespaces with their configurations.
+    repeated ImputedCostNamespace namespaces = 1;
+}
+
+message DeleteImputedCostsRequest {
+    // The namespaces to delete. All imputed cost configurations within these
+    // namespaces will be permanently removed.
+    repeated string namespaces = 1;
+}
+
+message DeleteImputedCostsResponse {
 }

@@ -3209,6 +3209,11 @@ message QueryRoutesRequest {
     channel may be used.
     */
     repeated uint64 outgoing_chan_ids = 20;
+
+    /*
+    An optional restriction to limit routing fees and imputed costs.
+    */
+    ImputedCostRestriction imputed_cost_restrictions = 21;
 }
 
 message NodePair {
@@ -3236,6 +3241,19 @@ message EdgeLocator {
     is true, the edge goes the other way.
     */
     bool direction_reverse = 2;
+}
+
+message ImputedCostRestriction {
+    /*
+    The name of the namespace for calculating the imputed costs.
+    */
+    string namespace = 1;
+
+    /*
+    The maximum number of millisatoshis that may be incurred, including routing
+    fees and imputed costs.
+    */
+    int64 total_cost_limit_msat = 2;
 }
 
 message QueryRoutesResponse {

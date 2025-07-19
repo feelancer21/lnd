@@ -1511,6 +1511,21 @@
               "format": "uint64"
             },
             "collectionFormat": "multi"
+          },
+          {
+            "name": "imputed_cost_restrictions.namespace",
+            "description": "The name of the namespace for calculating the imputed costs.",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          },
+          {
+            "name": "imputed_cost_restrictions.total_cost_limit_msat",
+            "description": "The maximum number of millisatoshis that may be incurred, including routing\nfees and imputed costs.",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
           }
         ],
         "tags": [
@@ -1662,6 +1677,10 @@
                     "format": "uint64"
                   },
                   "description": "The channel ids of the channels allowed for the first hop. If empty, any\nchannel may be used."
+                },
+                "imputed_cost_restrictions": {
+                  "$ref": "#/definitions/lnrpcImputedCostRestriction",
+                  "description": "An optional restriction to limit routing fees and imputed costs."
                 }
               }
             }
@@ -5579,6 +5598,20 @@
           "type": "integer",
           "format": "int64",
           "description": "The time-lock delta of the channel."
+        }
+      }
+    },
+    "lnrpcImputedCostRestriction": {
+      "type": "object",
+      "properties": {
+        "namespace": {
+          "type": "string",
+          "description": "The name of the namespace for calculating the imputed costs."
+        },
+        "total_cost_limit_msat": {
+          "type": "string",
+          "format": "int64",
+          "description": "The maximum number of millisatoshis that may be incurred, including routing\nfees and imputed costs."
         }
       }
     },
