@@ -140,7 +140,8 @@ type PaymentSession interface {
 	// during path finding.
 	RequestRoute(maxAmt, feeLimit lnwire.MilliSatoshi,
 		activeShards, height uint32,
-		firstHopCustomRecords lnwire.CustomRecords) (*route.Route,
+		firstHopCustomRecords lnwire.CustomRecords,
+		getHTLCs func() []channeldb.HTLCAttempt) (*route.Route,
 		error)
 
 	// UpdateAdditionalEdge takes an additional channel edge policy
@@ -263,10 +264,17 @@ func (e *pathFindingError) Unwrap() error {
 // NOTE: Part of the PaymentSession interface.
 func (p *paymentSession) RequestRoute(maxAmt, feeLimit lnwire.MilliSatoshi,
 	activeShards, height uint32,
-	firstHopCustomRecords lnwire.CustomRecords) (*route.Route, error) {
+	firstHopCustomRecords lnwire.CustomRecords,
+	getHTLCs func() []channeldb.HTLCAttempt) (*route.Route, error) {
 
 	if p.empty {
 		return nil, errEmptyPaySession
+	}
+
+	// QuickAndDirty: We simulate an errNoPathFound if an error occurs.
+	imputedCostControl, err := p.imputedCostControlSource(getHTLCs)
+	if err != nil {
+		return nil, errNoPathFound
 	}
 
 	// Add BlockPadding to the finalCltvDelta so that the receiving node
@@ -296,6 +304,7 @@ func (p *paymentSession) RequestRoute(maxAmt, feeLimit lnwire.MilliSatoshi,
 		Amp:                   p.payment.amp,
 		Metadata:              p.payment.Metadata,
 		FirstHopCustomRecords: firstHopCustomRecords,
+		ImputedCostControl:    imputedCostControl,
 	}
 
 	finalHtlcExpiry := int32(height) + int32(finalCltvDelta)

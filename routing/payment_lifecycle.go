@@ -280,7 +280,7 @@ lifecycle:
 		}
 
 		// Now request a route to be used to create our HTLC attempt.
-		rt, err := p.requestRoute(ps)
+		rt, err := p.requestRoute(ps, payment.GetHTLCs)
 		if err != nil {
 			return exitWithErr(err)
 		}
@@ -381,7 +381,8 @@ func (p *paymentLifecycle) checkContext(ctx context.Context) error {
 // requestRoute is responsible for finding a route to be used to create an HTLC
 // attempt.
 func (p *paymentLifecycle) requestRoute(
-	ps *channeldb.MPPaymentState) (*route.Route, error) {
+	ps *channeldb.MPPaymentState,
+	getHTLCs func() []channeldb.HTLCAttempt) (*route.Route, error) {
 
 	remainingFees := p.calcFeeBudget(ps.FeesPaid)
 
@@ -389,7 +390,7 @@ func (p *paymentLifecycle) requestRoute(
 	rt, err := p.paySession.RequestRoute(
 		ps.RemainingAmt, remainingFees,
 		uint32(ps.NumAttemptsInFlight), uint32(p.currentHeight),
-		p.firstHopCustomRecords,
+		p.firstHopCustomRecords, getHTLCs,
 	)
 
 	// Exit early if there's no error.

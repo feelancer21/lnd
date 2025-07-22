@@ -169,7 +169,8 @@ type mockPaymentSessionOld struct {
 var _ PaymentSession = (*mockPaymentSessionOld)(nil)
 
 func (m *mockPaymentSessionOld) RequestRoute(_, _ lnwire.MilliSatoshi,
-	_, height uint32, _ lnwire.CustomRecords) (*route.Route,
+	_, height uint32, _ lnwire.CustomRecords,
+	_ func() []channeldb.HTLCAttempt) (*route.Route,
 	error) {
 
 	if m.release != nil {
@@ -697,10 +698,12 @@ var _ PaymentSession = (*mockPaymentSession)(nil)
 
 func (m *mockPaymentSession) RequestRoute(maxAmt, feeLimit lnwire.MilliSatoshi,
 	activeShards, height uint32,
-	firstHopCustomRecords lnwire.CustomRecords) (*route.Route, error) {
+	firstHopCustomRecords lnwire.CustomRecords,
+	getHTLCs func() []channeldb.HTLCAttempt) (*route.Route, error) {
 
 	args := m.Called(
 		maxAmt, feeLimit, activeShards, height, firstHopCustomRecords,
+		getHTLCs,
 	)
 
 	// Type assertion on nil will fail, so we check and return here.

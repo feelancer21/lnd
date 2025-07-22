@@ -240,6 +240,7 @@ func TestRequestRoute(t *testing.T) {
 		lnwire.CustomRecords{
 			lnwire.MinCustomRecordsTlvType + 123: []byte{1, 2, 3},
 		},
+		getEmptyHTLCSlice,
 	)
 	if err != nil {
 		t.Fatal(err)

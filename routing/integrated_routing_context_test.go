@@ -239,7 +239,7 @@ func (c *integratedRoutingContext) testPayment(maxParts uint32,
 			amtRemaining, lnwire.MaxMilliSatoshi, inFlightHtlcs, 0,
 			lnwire.CustomRecords{
 				lnwire.MinCustomRecordsTlvType: []byte{1, 2, 3},
-			},
+			}, getEmptyHTLCSlice,
 		)
 		if err != nil {
 			return attempts, err
