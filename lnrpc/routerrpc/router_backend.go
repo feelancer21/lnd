@@ -197,6 +197,30 @@ func (r *RouterBackend) QueryRoutes(ctx context.Context,
 	return routeResp, nil
 }
 
+func parseImputedCostRestr(restr *lnrpc.ImputedCostRestriction) (
+	*routing.ImputedCostRestriction, error) {
+
+	if restr == nil {
+		return nil, nil
+	}
+
+	if restr.TotalCostLimitMsat < 0 {
+		return nil, fmt.Errorf("total cost limit must be non-negative:"+
+			" %d", restr.TotalCostLimitMsat)
+	}
+
+	// Optional cost limit. Zero is interpreted as no limit.
+	var limit routing.OptionalLimit
+	if restr.TotalCostLimitMsat > 0 {
+		limit = fn.Some(lnwire.MilliSatoshi(restr.TotalCostLimitMsat))
+	}
+
+	return &routing.ImputedCostRestriction{
+		Namespace: restr.Namespace,
+		CostLimit: limit,
+	}, nil
+}
+
 func parsePubKey(key string) (route.Vertex, error) {
 	pubKeyBytes, err := hex.DecodeString(key)
 	if err != nil {
@@ -380,6 +404,15 @@ func (r *RouterBackend) parseQueryRoutesRequest(in *lnrpc.QueryRoutesRequest) (
 		return nil, err
 	}
 
+	imputedRestr, err := parseImputedCostRestr(in.ImputedCostRestriction)
+	if err != nil {
+		return nil, err
+	}
+	imputedControl, err := r.ImputedCostManager.GetControl(imputedRestr)
+	if err != nil {
+		return nil, err
+	}
+
 	restrictions := &routing.RestrictParams{
 		FeeLimit: feeLimit,
 		ProbabilitySource: func(fromNode, toNode route.Vertex,
@@ -410,6 +443,7 @@ func (r *RouterBackend) parseQueryRoutesRequest(in *lnrpc.QueryRoutesRequest) (
 		CltvLimit:             cltvLimit,
 		DestFeatures:          destinationFeatures,
 		BlindedPaymentPathSet: blindedPathSet,
+		ImputedCostControl:    imputedControl,
 	}
 
 	// We set the outgoing channel restrictions if the user provides a
