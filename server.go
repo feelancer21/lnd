@@ -358,6 +358,8 @@ type server struct {
 	missionController *routing.MissionController
 	defaultMC         *routing.MissionControl
 
+	imputedCostManager *routing.ImputedCostManager
+
 	graphBuilder *graph.Builder
 
 	chanRouter *routing.ChannelRouter
@@ -1114,6 +1116,10 @@ func newServer(_ context.Context, cfg *Config, listenAddrs []net.Addr,
 		AttemptCostPPM: routingConfig.AttemptCostPPM,
 		MinProbability: routingConfig.MinRouteProbability,
 	}
+
+	s.imputedCostManager = routing.NewImputedCostManager(
+		selfNode.PubKeyBytes,
+	)
 
 	sourceNode, err := dbs.GraphDB.SourceNode()
 	if err != nil {
