@@ -118,6 +118,10 @@ type RouterBackend struct {
 	// ShouldSetExpEndorsement returns a boolean indicating whether the
 	// experimental endorsement bit should be set.
 	ShouldSetExpEndorsement func() bool
+
+	// Provides access to the ImputedCostNamespaces.
+	// Question: Replace with interface?
+	ImputedCostManager *routing.ImputedCostManager
 }
 
 // MissionControl defines the mission control dependencies of routerrpc.
