@@ -1287,6 +1287,12 @@ func (r *RouterBackend) extractIntentFromSendRequest(
 		return nil, errors.New("self-payments not allowed")
 	}
 
+	restrict, err := parseImputedCostRestr(rpcPayReq.ImputedCostRestriction)
+	if err != nil {
+		return nil, err
+	}
+	payIntent.ImputedCostRestriction = restrict
+
 	return payIntent, nil
 }
 
