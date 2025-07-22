@@ -49,6 +49,11 @@ type nodeWithDist struct {
 	// routingInfoSize is the total size requirement for the payloads field
 	// in the onion packet from this hop towards the final destination.
 	routingInfoSize uint64
+
+	// imputedDistInfo contains the accumulated imputed cost information
+	// and imputed attempt cost information from this node in the path
+	// finding process.
+	imputedDistInfo imputedDistInfo
 }
 
 // distanceHeap is a min-distance heap that's used within our path finding

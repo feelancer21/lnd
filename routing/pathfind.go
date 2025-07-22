@@ -484,6 +484,11 @@ type RestrictParams struct {
 	// FirstHopCustomRecords includes any records that should be included in
 	// the update_add_htlc message towards our peer.
 	FirstHopCustomRecords lnwire.CustomRecords
+
+	// ImputedCostControl provides access to imputed cost configurations
+	// that influence routing decisions by applying virtual costs to
+	// specific node pairs during pathfinding.
+	ImputedCostControl *ImputedCostControl
 }
 
 // PathFindingConfig defines global parameters that control the trade-off in
@@ -915,6 +920,48 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 			absoluteAttemptCost,
 		)
 
+		// Apply imputed costs if enabled. Imputed costs allow the
+		// application of virtual costs to specific node pairs to
+		// influence routing decisions without modifying actual network
+		// fees.
+		distInfo := toNodeDist.imputedDistInfo
+		if r.ImputedCostControl != nil {
+			// Calculate the imputed costs for this routing step and
+			// validate that total costs (fees + imputed costs) do
+			// not exceed configured limits. Returns an error if the
+			// limit is exceeded, otherwise returns updated imputed
+			// cost info.
+			distInfo, err = r.ImputedCostControl.expandDistInfo(
+				fromVertex, toNodeDist.node, netAmountToReceive,
+				totalFee, distInfo,
+			)
+			if err != nil {
+				return
+			}
+
+			// Add the imputed distance to the total pathfinding
+			// distance.
+			//
+			// Note: This addition is valid within the Dijkstra
+			// algorithm implementation because the current design
+			// ensures that the imputed cost delta to the toNode is
+			// always non-negative.
+			imputedDist := distInfo.getDist(probability)
+			tempDist += imputedDist
+
+			log.Trace(lnutils.NewLogClosure(func() string {
+				toDistInfo := toNodeDist.imputedDistInfo
+				l := toDistInfo.getDist(toNodeDist.probability)
+
+				return fmt.Sprintf("imputed cost distance: "+
+					"fromnode=%v, tonode=%v, amt=%v, "+
+					"dist=%v, distlast=%v, distdelta=%v",
+					fromVertex, toNodeDist.node,
+					netAmountToReceive, imputedDist, l,
+					imputedDist-l)
+			}))
+		}
+
 		// If there is already a best route stored, compare this
 		// candidate route with the best route so far.
 		current, ok := distance[fromVertex]
@@ -988,6 +1035,7 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 			probability:       probability,
 			nextHop:           edge,
 			routingInfoSize:   routingInfoSize,
+			imputedDistInfo:   distInfo,
 		}
 		distance[fromVertex] = withDist
 
