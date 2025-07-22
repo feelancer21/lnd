@@ -380,6 +380,15 @@ func (r *RouterBackend) parseQueryRoutesRequest(in *lnrpc.QueryRoutesRequest) (
 		return nil, err
 	}
 
+	imputedRestr, err := parseImputedCostRestr(in.ImputedCostRestriction)
+	if err != nil {
+		return nil, err
+	}
+	imputedControl, err := r.ImputedCostManager.GetControl(imputedRestr)
+	if err != nil {
+		return nil, err
+	}
+
 	restrictions := &routing.RestrictParams{
 		FeeLimit: feeLimit,
 		ProbabilitySource: func(fromNode, toNode route.Vertex,
@@ -410,6 +419,7 @@ func (r *RouterBackend) parseQueryRoutesRequest(in *lnrpc.QueryRoutesRequest) (
 		CltvLimit:             cltvLimit,
 		DestFeatures:          destinationFeatures,
 		BlindedPaymentPathSet: blindedPathSet,
+		ImputedCostControl:    imputedControl,
 	}
 
 	// We set the outgoing channel restrictions if the user provides a
