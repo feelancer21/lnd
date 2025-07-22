@@ -1126,11 +1126,12 @@ func newServer(_ context.Context, cfg *Config, listenAddrs []net.Addr,
 		return nil, fmt.Errorf("error getting source node: %w", err)
 	}
 	paymentSessionSource := &routing.SessionSource{
-		GraphSessionFactory: dbs.GraphDB,
-		SourceNode:          sourceNode,
-		MissionControl:      s.defaultMC,
-		GetLink:             s.htlcSwitch.GetLinkByShortID,
-		PathFindingConfig:   pathFindingConfig,
+		GraphSessionFactory:         dbs.GraphDB,
+		SourceNode:                  sourceNode,
+		MissionControl:              s.defaultMC,
+		GetLink:                     s.htlcSwitch.GetLinkByShortID,
+		PathFindingConfig:           pathFindingConfig,
+		GetImputedCostControlSource: s.imputedCostManager.GetFactory,
 	}
 
 	paymentControl := channeldb.NewPaymentControl(dbs.ChanStateDB)

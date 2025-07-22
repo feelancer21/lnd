@@ -133,12 +133,15 @@ func createTestCtxFromGraphInstanceAssumeValid(t *testing.T,
 
 	sourceNode, err := graphInstance.graph.SourceNode()
 	require.NoError(t, err)
+
+	costMan := NewImputedCostManager(sourceNode.PubKeyBytes)
 	sessionSource := &SessionSource{
-		GraphSessionFactory: graphInstance.graph,
-		SourceNode:          sourceNode,
-		GetLink:             graphInstance.getLink,
-		PathFindingConfig:   pathFindingConfig,
-		MissionControl:      mc,
+		GraphSessionFactory:         graphInstance.graph,
+		SourceNode:                  sourceNode,
+		GetLink:                     graphInstance.getLink,
+		PathFindingConfig:           pathFindingConfig,
+		MissionControl:              mc,
+		GetImputedCostControlSource: costMan.GetFactory,
 	}
 
 	graphBuilder := newMockGraphBuilder(graphInstance.graph)

@@ -192,6 +192,8 @@ type paymentSession struct {
 	// will happen and this value remains unused.
 	minShardAmt lnwire.MilliSatoshi
 
+	imputedCostControlSource ImputedCostControlSource
+
 	// log is a payment session-specific logger.
 	log btclog.Logger
 }
@@ -201,7 +203,9 @@ func newPaymentSession(p *LightningPayment, selfNode route.Vertex,
 	getBandwidthHints func(Graph) (bandwidthHints, error),
 	graphSessFactory GraphSessionFactory,
 	missionControl MissionControlQuerier,
-	pathFindingConfig PathFindingConfig) (*paymentSession, error) {
+	pathFindingConfig PathFindingConfig,
+	imputedCostControlSource ImputedCostControlSource) (*paymentSession,
+	error) {
 
 	edges, err := RouteHintsToEdges(p.RouteHints, p.Target)
 	if err != nil {
@@ -223,16 +227,17 @@ func newPaymentSession(p *LightningPayment, selfNode route.Vertex,
 	logPrefix := fmt.Sprintf("PaymentSession(%x):", p.Identifier())
 
 	return &paymentSession{
-		selfNode:          selfNode,
-		additionalEdges:   edges,
-		getBandwidthHints: getBandwidthHints,
-		payment:           p,
-		pathFinder:        findPath,
-		graphSessFactory:  graphSessFactory,
-		pathFindingConfig: pathFindingConfig,
-		missionControl:    missionControl,
-		minShardAmt:       DefaultShardMinAmt,
-		log:               log.WithPrefix(logPrefix),
+		selfNode:                 selfNode,
+		additionalEdges:          edges,
+		getBandwidthHints:        getBandwidthHints,
+		payment:                  p,
+		pathFinder:               findPath,
+		graphSessFactory:         graphSessFactory,
+		pathFindingConfig:        pathFindingConfig,
+		missionControl:           missionControl,
+		minShardAmt:              DefaultShardMinAmt,
+		log:                      log.WithPrefix(logPrefix),
+		imputedCostControlSource: imputedCostControlSource,
 	}, nil
 }
 

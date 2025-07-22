@@ -4,6 +4,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/lightningnetwork/lnd/channeldb"
 	"github.com/lightningnetwork/lnd/fn/v2"
 	"github.com/lightningnetwork/lnd/lnwire"
 	"github.com/lightningnetwork/lnd/routing/route"
@@ -473,4 +474,11 @@ func TestImputedCostManager(t *testing.T) {
 			)
 		})
 	}
+}
+
+// getNilControl is a mock factory method for creating a nil ImputedCostControl.
+func getNilControl(func() []channeldb.HTLCAttempt) (*ImputedCostControl,
+	error) {
+
+	return nil, nil
 }
