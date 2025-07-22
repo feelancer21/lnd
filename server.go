@@ -358,6 +358,8 @@ type server struct {
 	missionController *routing.MissionController
 	defaultMC         *routing.MissionControl
 
+	imputedCostManager *routing.ImputedCostManager
+
 	graphBuilder *graph.Builder
 
 	chanRouter *routing.ChannelRouter
@@ -1130,6 +1132,10 @@ func newServer(_ context.Context, cfg *Config, listenAddrs []net.Addr,
 	paymentControl := channeldb.NewPaymentControl(dbs.ChanStateDB)
 
 	s.controlTower = routing.NewControlTower(paymentControl)
+
+	s.imputedCostManager = routing.NewImputedCostManager(
+		selfNode.PubKeyBytes, s.controlTower.FetchPayment,
+	)
 
 	strictPruning := cfg.Bitcoin.Node == "neutrino" ||
 		cfg.Routing.StrictZombiePruning
