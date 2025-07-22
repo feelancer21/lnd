@@ -767,6 +767,7 @@ func (r *rpcServer) addDeps(s *server, macService *macaroons.Service,
 				EndorsementExperimentEnd,
 			)
 		},
+		ImputedCostManager: s.imputedCostManager,
 	}
 
 	genInvoiceFeatures := func() *lnwire.FeatureVector {
