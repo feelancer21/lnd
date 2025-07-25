@@ -1121,13 +1121,6 @@ func newServer(_ context.Context, cfg *Config, listenAddrs []net.Addr,
 	if err != nil {
 		return nil, fmt.Errorf("error getting source node: %w", err)
 	}
-	paymentSessionSource := &routing.SessionSource{
-		GraphSessionFactory: dbs.GraphDB,
-		SourceNode:          sourceNode,
-		MissionControl:      s.defaultMC,
-		GetLink:             s.htlcSwitch.GetLinkByShortID,
-		PathFindingConfig:   pathFindingConfig,
-	}
 
 	paymentControl := channeldb.NewPaymentControl(dbs.ChanStateDB)
 
@@ -1136,6 +1129,15 @@ func newServer(_ context.Context, cfg *Config, listenAddrs []net.Addr,
 	s.imputedCostManager = routing.NewImputedCostManager(
 		selfNode.PubKeyBytes, s.controlTower.FetchPayment,
 	)
+
+	paymentSessionSource := &routing.SessionSource{
+		GraphSessionFactory: dbs.GraphDB,
+		SourceNode:          sourceNode,
+		MissionControl:      s.defaultMC,
+		GetLink:             s.htlcSwitch.GetLinkByShortID,
+		PathFindingConfig:   pathFindingConfig,
+		ImputedCostManager:  s.imputedCostManager,
+	}
 
 	strictPruning := cfg.Bitcoin.Node == "neutrino" ||
 		cfg.Routing.StrictZombiePruning
