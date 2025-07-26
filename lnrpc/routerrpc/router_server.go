@@ -163,6 +163,18 @@ var (
 			Entity: "offchain",
 			Action: "write",
 		}},
+		"/routerrpc.Router/XImportImputedCosts": {{
+			Entity: "offchain",
+			Action: "write",
+		}},
+		"/routerrpc.Router/XQueryImputedCosts": {{
+			Entity: "offchain",
+			Action: "read",
+		}},
+		"/routerrpc.Router/XDeleteImputedCosts": {{
+			Entity: "offchain",
+			Action: "write",
+		}},
 	}
 
 	// DefaultRouterMacFilename is the default name of the router macaroon
