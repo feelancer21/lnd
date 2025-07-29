@@ -3209,6 +3209,11 @@ message QueryRoutesRequest {
     channel may be used.
     */
     repeated uint64 outgoing_chan_ids = 20;
+
+    /*
+    The pubkeys of the last hops of the route. If empty, any hop may be used.
+    */
+    repeated bytes last_hop_pubkeys = 21;
 }
 
 message NodePair {

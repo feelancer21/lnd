@@ -1511,6 +1511,18 @@
               "format": "uint64"
             },
             "collectionFormat": "multi"
+          },
+          {
+            "name": "last_hop_pubkeys",
+            "description": "The pubkeys of the last hops of the route. If empty, any hop may be used.",
+            "in": "query",
+            "required": false,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "byte"
+            },
+            "collectionFormat": "multi"
           }
         ],
         "tags": [
@@ -1662,6 +1674,14 @@
                     "format": "uint64"
                   },
                   "description": "The channel ids of the channels allowed for the first hop. If empty, any\nchannel may be used."
+                },
+                "last_hop_pubkeys": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "format": "byte"
+                  },
+                  "description": "The pubkeys of the last hops of the route. If empty, any hop may be used."
                 }
               }
             }
