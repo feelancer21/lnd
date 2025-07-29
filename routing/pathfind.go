@@ -449,6 +449,8 @@ type RestrictParams struct {
 	// is reached. If nil, any node may be used.
 	LastHop *route.Vertex
 
+	LastHops []route.Vertex
+
 	// CltvLimit is the maximum time lock of the route excluding the final
 	// ctlv. After path finding is complete, the caller needs to increase
 	// all cltv expiry heights with the required final cltv delta.
@@ -1041,6 +1043,15 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 		return fromFeatures, nil
 	}
 
+	// Create a map for faster access to the last hop vertex.
+	var lastHopMap map[route.Vertex]struct{}
+	if len(r.LastHops) > 0 {
+		lastHopMap = make(map[route.Vertex]struct{})
+		for _, lastHop := range r.LastHops {
+			lastHopMap[lastHop] = struct{}{}
+		}
+	}
+
 	routeToSelf := source == target
 	for {
 		nodesVisited++
@@ -1103,6 +1114,12 @@ func findPath(g *graphParams, r *RestrictParams, cfg *PathFindingConfig,
 				pivot == target && fromNode != *r.LastHop {
 
 				continue
+			}
+
+			if len(lastHopMap) > 0 {
+				if _, ok := lastHopMap[fromNode]; !ok {
+					continue
+				}
 			}
 
 			edge := edgeUnifier.getEdge(

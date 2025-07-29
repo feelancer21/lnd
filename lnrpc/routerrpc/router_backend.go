@@ -434,6 +434,21 @@ func (r *RouterBackend) parseQueryRoutesRequest(in *lnrpc.QueryRoutesRequest) (
 		restrictions.LastHop = &lastHop
 	}
 
+	if len(in.LastHopPubkeys) > 0 {
+		restrictions.LastHops = make(
+			[]route.Vertex, 0, len(in.LastHopPubkeys),
+		)
+
+		for _, hop := range in.LastHopPubkeys {
+			l, err := route.NewVertexFromBytes(hop)
+			if err != nil {
+				return nil, err
+			}
+
+			restrictions.LastHops = append(restrictions.LastHops, l)
+		}
+	}
+
 	// If we have any TLV records destined for the final hop, then we'll
 	// attempt to decode them now into a form that the router can more
 	// easily manipulate.
