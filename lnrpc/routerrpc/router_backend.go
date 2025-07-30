@@ -169,6 +169,13 @@ type MissionControl interface {
 func (r *RouterBackend) QueryRoutes(ctx context.Context,
 	in *lnrpc.QueryRoutesRequest) (*lnrpc.QueryRoutesResponse, error) {
 
+	// Recover from any panics during PoC of imputed cost.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("panic while QueryRoutes: %v", r)
+		}
+	}()
+
 	routeReq, err := r.parseQueryRoutesRequest(in)
 	if err != nil {
 		return nil, err

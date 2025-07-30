@@ -365,6 +365,12 @@ func (r *ServerShell) CreateSubServer(configRegistry lnrpc.SubServerConfigDispat
 func (s *Server) SendPaymentV2(req *SendPaymentRequest,
 	stream Router_SendPaymentV2Server) error {
 
+	// Recover from any panics during PoC of imputed cost.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("panic while SendPaymentV2: %v", r)
+		}
+	}()
 	// Set payment request attempt timeout.
 	if req.TimeoutSeconds == 0 {
 		req.TimeoutSeconds = DefaultPaymentTimeout

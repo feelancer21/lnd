@@ -41,6 +41,13 @@ func parseImputedCostRestr(restr *lnrpc.ImputedCostRestriction) (
 func (s *Server) XImportImputedCosts(_ context.Context,
 	req *ImportImputedCostsRequest) (*ImportImputedCostsResponse, error) {
 
+	// Recover from any panics during PoC of imputed cost.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("panic while XImportImputedCosts: %v", r)
+		}
+	}()
+
 	data := make(map[string]*ImputedCostNamespace)
 	names := make(fn.Set[string])
 
@@ -155,6 +162,13 @@ func unmarshalImputedParams(
 func (s *Server) XQueryImputedCosts(_ context.Context,
 	req *QueryImputedCostsRequest) (*QueryImputedCostsResponse, error) {
 
+	// Recover from any panics during PoC of imputed cost.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("panic while XQueryImputedCosts: %v", r)
+		}
+	}()
+
 	names := fn.NewSet(req.Namespaces...)
 	res := make([]*ImputedCostNamespace, 0, names.Size())
 
@@ -206,6 +220,13 @@ func marshalImputedParams(
 
 func (s *Server) XDeleteImputedCosts(_ context.Context,
 	req *DeleteImputedCostsRequest) (*DeleteImputedCostsResponse, error) {
+
+	// Recover from any panics during PoC of imputed cost.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("panic while XDeleteImputedCosts: %v", r)
+		}
+	}()
 
 	if len(req.Namespaces) == 0 {
 		return nil, errors.New("at least one namespace required")
