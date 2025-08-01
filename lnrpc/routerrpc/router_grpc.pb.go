@@ -128,6 +128,20 @@ type RouterClient interface {
 	// operation is returned. The deletion will not be communicated to the channel
 	// peer via any message.
 	XDeleteLocalChanAliases(ctx context.Context, in *DeleteAliasesRequest, opts ...grpc.CallOption) (*DeleteAliasesResponse, error)
+	// XImportImputedCosts is an experimental API that imports imputed cost data
+	// for routing decisions. Imputed costs allow users to influence route
+	// selection by applying additional virtual costs or penalties to specific
+	// node pairs.
+	// These values are only stored in-memory and will not be persisted across
+	// restarts.
+	XImportImputedCosts(ctx context.Context, in *ImportImputedCostsRequest, opts ...grpc.CallOption) (*ImportImputedCostsResponse, error)
+	// XQueryImputedCosts is an experimental API that retrieves the currently
+	// active imputed cost configurations for the specified namespaces. If no
+	// namespaces are specified, all configured namespaces will be returned.
+	XQueryImputedCosts(ctx context.Context, in *QueryImputedCostsRequest, opts ...grpc.CallOption) (*QueryImputedCostsResponse, error)
+	// XDeleteImputedCosts is an experimental API that permanently removes the
+	// specified namespaces and all their associated imputed cost configurations.
+	XDeleteImputedCosts(ctx context.Context, in *DeleteImputedCostsRequest, opts ...grpc.CallOption) (*DeleteImputedCostsResponse, error)
 }
 
 type routerClient struct {
@@ -481,6 +495,33 @@ func (c *routerClient) XDeleteLocalChanAliases(ctx context.Context, in *DeleteAl
 	return out, nil
 }
 
+func (c *routerClient) XImportImputedCosts(ctx context.Context, in *ImportImputedCostsRequest, opts ...grpc.CallOption) (*ImportImputedCostsResponse, error) {
+	out := new(ImportImputedCostsResponse)
+	err := c.cc.Invoke(ctx, "/routerrpc.Router/XImportImputedCosts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *routerClient) XQueryImputedCosts(ctx context.Context, in *QueryImputedCostsRequest, opts ...grpc.CallOption) (*QueryImputedCostsResponse, error) {
+	out := new(QueryImputedCostsResponse)
+	err := c.cc.Invoke(ctx, "/routerrpc.Router/XQueryImputedCosts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *routerClient) XDeleteImputedCosts(ctx context.Context, in *DeleteImputedCostsRequest, opts ...grpc.CallOption) (*DeleteImputedCostsResponse, error) {
+	out := new(DeleteImputedCostsResponse)
+	err := c.cc.Invoke(ctx, "/routerrpc.Router/XDeleteImputedCosts", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // RouterServer is the server API for Router service.
 // All implementations must embed UnimplementedRouterServer
 // for forward compatibility
@@ -594,6 +635,20 @@ type RouterServer interface {
 	// operation is returned. The deletion will not be communicated to the channel
 	// peer via any message.
 	XDeleteLocalChanAliases(context.Context, *DeleteAliasesRequest) (*DeleteAliasesResponse, error)
+	// XImportImputedCosts is an experimental API that imports imputed cost data
+	// for routing decisions. Imputed costs allow users to influence route
+	// selection by applying additional virtual costs or penalties to specific
+	// node pairs.
+	// These values are only stored in-memory and will not be persisted across
+	// restarts.
+	XImportImputedCosts(context.Context, *ImportImputedCostsRequest) (*ImportImputedCostsResponse, error)
+	// XQueryImputedCosts is an experimental API that retrieves the currently
+	// active imputed cost configurations for the specified namespaces. If no
+	// namespaces are specified, all configured namespaces will be returned.
+	XQueryImputedCosts(context.Context, *QueryImputedCostsRequest) (*QueryImputedCostsResponse, error)
+	// XDeleteImputedCosts is an experimental API that permanently removes the
+	// specified namespaces and all their associated imputed cost configurations.
+	XDeleteImputedCosts(context.Context, *DeleteImputedCostsRequest) (*DeleteImputedCostsResponse, error)
 	mustEmbedUnimplementedRouterServer()
 }
 
@@ -660,6 +715,15 @@ func (UnimplementedRouterServer) XAddLocalChanAliases(context.Context, *AddAlias
 }
 func (UnimplementedRouterServer) XDeleteLocalChanAliases(context.Context, *DeleteAliasesRequest) (*DeleteAliasesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method XDeleteLocalChanAliases not implemented")
+}
+func (UnimplementedRouterServer) XImportImputedCosts(context.Context, *ImportImputedCostsRequest) (*ImportImputedCostsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method XImportImputedCosts not implemented")
+}
+func (UnimplementedRouterServer) XQueryImputedCosts(context.Context, *QueryImputedCostsRequest) (*QueryImputedCostsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method XQueryImputedCosts not implemented")
+}
+func (UnimplementedRouterServer) XDeleteImputedCosts(context.Context, *DeleteImputedCostsRequest) (*DeleteImputedCostsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method XDeleteImputedCosts not implemented")
 }
 func (UnimplementedRouterServer) mustEmbedUnimplementedRouterServer() {}
 
@@ -1060,6 +1124,60 @@ func _Router_XDeleteLocalChanAliases_Handler(srv interface{}, ctx context.Contex
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Router_XImportImputedCosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ImportImputedCostsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RouterServer).XImportImputedCosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/routerrpc.Router/XImportImputedCosts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RouterServer).XImportImputedCosts(ctx, req.(*ImportImputedCostsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Router_XQueryImputedCosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(QueryImputedCostsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RouterServer).XQueryImputedCosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/routerrpc.Router/XQueryImputedCosts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RouterServer).XQueryImputedCosts(ctx, req.(*QueryImputedCostsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Router_XDeleteImputedCosts_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteImputedCostsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RouterServer).XDeleteImputedCosts(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/routerrpc.Router/XDeleteImputedCosts",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RouterServer).XDeleteImputedCosts(ctx, req.(*DeleteImputedCostsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // Router_ServiceDesc is the grpc.ServiceDesc for Router service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1118,6 +1236,18 @@ var Router_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "XDeleteLocalChanAliases",
 			Handler:    _Router_XDeleteLocalChanAliases_Handler,
+		},
+		{
+			MethodName: "XImportImputedCosts",
+			Handler:    _Router_XImportImputedCosts_Handler,
+		},
+		{
+			MethodName: "XQueryImputedCosts",
+			Handler:    _Router_XQueryImputedCosts_Handler,
+		},
+		{
+			MethodName: "XDeleteImputedCosts",
+			Handler:    _Router_XDeleteImputedCosts_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

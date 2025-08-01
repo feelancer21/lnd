@@ -118,6 +118,10 @@ type RouterBackend struct {
 	// ShouldSetExpEndorsement returns a boolean indicating whether the
 	// experimental endorsement bit should be set.
 	ShouldSetExpEndorsement func() bool
+
+	// Provides access to the ImputedCostNamespaces.
+	// Question: Replace with interface?
+	ImputedCostManager *routing.ImputedCostManager
 }
 
 // MissionControl defines the mission control dependencies of routerrpc.
@@ -164,6 +168,13 @@ type MissionControl interface {
 // PR to send based on well formatted route
 func (r *RouterBackend) QueryRoutes(ctx context.Context,
 	in *lnrpc.QueryRoutesRequest) (*lnrpc.QueryRoutesResponse, error) {
+
+	// Recover from any panics during PoC of imputed cost.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("panic while QueryRoutes: %v", r)
+		}
+	}()
 
 	routeReq, err := r.parseQueryRoutesRequest(in)
 	if err != nil {
@@ -376,6 +387,15 @@ func (r *RouterBackend) parseQueryRoutesRequest(in *lnrpc.QueryRoutesRequest) (
 		return nil, err
 	}
 
+	imputedRestr, err := parseImputedCostRestr(in.ImputedCostRestriction)
+	if err != nil {
+		return nil, err
+	}
+	imputedControl, err := r.ImputedCostManager.GetControl(imputedRestr)
+	if err != nil {
+		return nil, err
+	}
+
 	restrictions := &routing.RestrictParams{
 		FeeLimit: feeLimit,
 		ProbabilitySource: func(fromNode, toNode route.Vertex,
@@ -406,6 +426,7 @@ func (r *RouterBackend) parseQueryRoutesRequest(in *lnrpc.QueryRoutesRequest) (
 		CltvLimit:             cltvLimit,
 		DestFeatures:          destinationFeatures,
 		BlindedPaymentPathSet: blindedPathSet,
+		ImputedCostControl:    imputedControl,
 	}
 
 	// We set the outgoing channel restrictions if the user provides a
@@ -1272,6 +1293,12 @@ func (r *RouterBackend) extractIntentFromSendRequest(
 	if !rpcPayReq.AllowSelfPayment && payIntent.Target == r.SelfNode {
 		return nil, errors.New("self-payments not allowed")
 	}
+
+	restrict, err := parseImputedCostRestr(rpcPayReq.ImputedCostRestriction)
+	if err != nil {
+		return nil, err
+	}
+	payIntent.ImputedCostRestriction = restrict
 
 	return payIntent, nil
 }

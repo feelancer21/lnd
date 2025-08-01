@@ -358,6 +358,8 @@ type server struct {
 	missionController *routing.MissionController
 	defaultMC         *routing.MissionControl
 
+	imputedCostManager *routing.ImputedCostManager
+
 	graphBuilder *graph.Builder
 
 	chanRouter *routing.ChannelRouter
@@ -1119,17 +1121,23 @@ func newServer(_ context.Context, cfg *Config, listenAddrs []net.Addr,
 	if err != nil {
 		return nil, fmt.Errorf("error getting source node: %w", err)
 	}
+
+	paymentControl := channeldb.NewPaymentControl(dbs.ChanStateDB)
+
+	s.controlTower = routing.NewControlTower(paymentControl)
+
+	s.imputedCostManager = routing.NewImputedCostManager(
+		selfNode.PubKeyBytes, s.controlTower.FetchPayment,
+	)
+
 	paymentSessionSource := &routing.SessionSource{
 		GraphSessionFactory: dbs.GraphDB,
 		SourceNode:          sourceNode,
 		MissionControl:      s.defaultMC,
 		GetLink:             s.htlcSwitch.GetLinkByShortID,
 		PathFindingConfig:   pathFindingConfig,
+		ImputedCostManager:  s.imputedCostManager,
 	}
-
-	paymentControl := channeldb.NewPaymentControl(dbs.ChanStateDB)
-
-	s.controlTower = routing.NewControlTower(paymentControl)
 
 	strictPruning := cfg.Bitcoin.Node == "neutrino" ||
 		cfg.Routing.StrictZombiePruning

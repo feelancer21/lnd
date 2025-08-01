@@ -163,6 +163,18 @@ var (
 			Entity: "offchain",
 			Action: "write",
 		}},
+		"/routerrpc.Router/XImportImputedCosts": {{
+			Entity: "offchain",
+			Action: "write",
+		}},
+		"/routerrpc.Router/XQueryImputedCosts": {{
+			Entity: "offchain",
+			Action: "read",
+		}},
+		"/routerrpc.Router/XDeleteImputedCosts": {{
+			Entity: "offchain",
+			Action: "write",
+		}},
 	}
 
 	// DefaultRouterMacFilename is the default name of the router macaroon
@@ -353,6 +365,12 @@ func (r *ServerShell) CreateSubServer(configRegistry lnrpc.SubServerConfigDispat
 func (s *Server) SendPaymentV2(req *SendPaymentRequest,
 	stream Router_SendPaymentV2Server) error {
 
+	// Recover from any panics during PoC of imputed cost.
+	defer func() {
+		if r := recover(); r != nil {
+			log.Errorf("panic while SendPaymentV2: %v", r)
+		}
+	}()
 	// Set payment request attempt timeout.
 	if req.TimeoutSeconds == 0 {
 		req.TimeoutSeconds = DefaultPaymentTimeout

@@ -122,6 +122,7 @@ func TestUpdateAdditionalEdge(t *testing.T) {
 		&sessionGraph{},
 		&MissionControl{},
 		PathFindingConfig{},
+		&ImputedCostManager{},
 	)
 	require.NoError(t, err, "failed to create payment session")
 
@@ -200,6 +201,7 @@ func TestRequestRoute(t *testing.T) {
 		&sessionGraph{},
 		&MissionControl{},
 		PathFindingConfig{},
+		&ImputedCostManager{},
 	)
 	if err != nil {
 		t.Fatal(err)

@@ -14,5 +14,6 @@ func routerCommands() []cli.Command {
 		getCfgCommand,
 		setCfgCommand,
 		updateChanStatusCommand,
+		queryImputedCostManagerCommand,
 	}
 }

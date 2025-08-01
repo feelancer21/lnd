@@ -192,6 +192,9 @@ type paymentSession struct {
 	// will happen and this value remains unused.
 	minShardAmt lnwire.MilliSatoshi
 
+	// replace with Interface?
+	imputedCostManager *ImputedCostManager
+
 	// log is a payment session-specific logger.
 	log btclog.Logger
 }
@@ -201,7 +204,8 @@ func newPaymentSession(p *LightningPayment, selfNode route.Vertex,
 	getBandwidthHints func(Graph) (bandwidthHints, error),
 	graphSessFactory GraphSessionFactory,
 	missionControl MissionControlQuerier,
-	pathFindingConfig PathFindingConfig) (*paymentSession, error) {
+	pathFindingConfig PathFindingConfig,
+	imputedCostManager *ImputedCostManager) (*paymentSession, error) {
 
 	edges, err := RouteHintsToEdges(p.RouteHints, p.Target)
 	if err != nil {
@@ -223,16 +227,17 @@ func newPaymentSession(p *LightningPayment, selfNode route.Vertex,
 	logPrefix := fmt.Sprintf("PaymentSession(%x):", p.Identifier())
 
 	return &paymentSession{
-		selfNode:          selfNode,
-		additionalEdges:   edges,
-		getBandwidthHints: getBandwidthHints,
-		payment:           p,
-		pathFinder:        findPath,
-		graphSessFactory:  graphSessFactory,
-		pathFindingConfig: pathFindingConfig,
-		missionControl:    missionControl,
-		minShardAmt:       DefaultShardMinAmt,
-		log:               log.WithPrefix(logPrefix),
+		selfNode:           selfNode,
+		additionalEdges:    edges,
+		getBandwidthHints:  getBandwidthHints,
+		payment:            p,
+		pathFinder:         findPath,
+		graphSessFactory:   graphSessFactory,
+		pathFindingConfig:  pathFindingConfig,
+		missionControl:     missionControl,
+		minShardAmt:        DefaultShardMinAmt,
+		imputedCostManager: imputedCostManager,
+		log:                log.WithPrefix(logPrefix),
 	}, nil
 }
 
@@ -274,6 +279,28 @@ func (p *paymentSession) RequestRoute(maxAmt, feeLimit lnwire.MilliSatoshi,
 	// the path finding algorithm is unaware of this value.
 	cltvLimit := p.payment.CltvLimit - uint32(finalCltvDelta)
 
+	// We'll make sure to respect the max payment shard size (if it's set),
+	// which is effectively our client-side MTU that we'll attempt to
+	// respect at all times.
+	maxShardActive := p.payment.MaxShardAmt != nil
+	if maxShardActive && maxAmt > *p.payment.MaxShardAmt {
+		p.log.Debugf("Clamping payment attempt from %v to %v due to "+
+			"max shard size of %v", maxAmt, *p.payment.MaxShardAmt,
+			maxAmt)
+
+		maxAmt = *p.payment.MaxShardAmt
+	}
+
+	imputedControl, err := p.imputedCostManager.GetPaymentControl(
+		p.payment.Identifier(), maxAmt,
+		p.payment.ImputedCostRestriction,
+	)
+	if err != nil {
+		// TODO: returning a errNoPathFound here is just a hack for the
+		// PoC to ensure proper handling in the payment lifecycle.
+		return nil, errNoPathFound
+	}
+
 	// TODO(roasbeef): sync logic amongst dist sys
 
 	// Taking into account this prune view, we'll attempt to locate a path
@@ -291,21 +318,10 @@ func (p *paymentSession) RequestRoute(maxAmt, feeLimit lnwire.MilliSatoshi,
 		Amp:                   p.payment.amp,
 		Metadata:              p.payment.Metadata,
 		FirstHopCustomRecords: firstHopCustomRecords,
+		ImputedCostControl:    imputedControl,
 	}
 
 	finalHtlcExpiry := int32(height) + int32(finalCltvDelta)
-
-	// Before we enter the loop below, we'll make sure to respect the max
-	// payment shard size (if it's set), which is effectively our
-	// client-side MTU that we'll attempt to respect at all times.
-	maxShardActive := p.payment.MaxShardAmt != nil
-	if maxShardActive && maxAmt > *p.payment.MaxShardAmt {
-		p.log.Debugf("Clamping payment attempt from %v to %v due to "+
-			"max shard size of %v", maxAmt, *p.payment.MaxShardAmt,
-			maxAmt)
-
-		maxAmt = *p.payment.MaxShardAmt
-	}
 
 	var path []*unifiedEdge
 	findPath := func(graph graphdb.NodeTraverser) error {
