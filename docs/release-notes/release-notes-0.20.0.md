@@ -149,10 +149,13 @@ circuit. The indices are only available for forwarding events saved after v0.20.
   `--route_hints` flag](https://github.com/lightningnetwork/lnd/pull/9721) to
   support routing through private channels.
 
-
 * The `lncli fwdinghistory` command now supports two new flags:
   [`--incoming_chan_ids` and `--outgoing_chan_ids`](https://github.com/lightningnetwork/lnd/pull/9356).
   These filters allows to query forwarding events for specific channels.
+
+* `lncli queryroutes` now supports two new optional parameters: `--source` to
+  specify the source node for the route and `--last_hop` to specify the
+  penultimate node in the payment path.
 
 # Improvements
 ## Functional Updates
@@ -304,6 +307,7 @@ reader of a payment request.
 * Boris Nagaev
 * Elle Mouton
 * Erick Cestari
+* Feelancer21
 * Funyug
 * Mohamed Awnallah
 * Olaoluwa Osuntokun

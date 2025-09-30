@@ -1163,6 +1163,17 @@ var queryRoutesCommand = cli.Command{
 				"to use as the first hop. This flag can be " +
 				"specified multiple times in the same command.",
 		},
+		cli.StringFlag{
+			Name: "source",
+			Usage: "(optional) the 33-byte hex-encoded public key for the " +
+				"payment source. If empty, self is assumed",
+		},
+		cli.StringFlag{
+			Name: "last_hop",
+			Usage: "(optional) the 33-byte hex-encoded public key " +
+				"for the last hop (penultimate node in the path) " +
+				"to route through for this payment",
+		},
 		cli.StringSliceFlag{
 			Name: "ignore_pair",
 			Usage: "ignore directional node pair " +
@@ -1270,6 +1281,7 @@ func queryRoutes(ctx *cli.Context) error {
 
 	req := &lnrpc.QueryRoutesRequest{
 		PubKey:              dest,
+		SourcePubKey:        ctx.String("source"),
 		Amt:                 amt,
 		FeeLimit:            feeLimit,
 		FinalCltvDelta:      int32(ctx.Int("final_cltv_delta")),
@@ -1284,6 +1296,14 @@ func queryRoutes(ctx *cli.Context) error {
 	req.OutgoingChanIds, err = parseChanIDs(outgoingChanIds)
 	if err != nil {
 		return fmt.Errorf("unable to decode outgoing_chan_id: %w", err)
+	}
+
+	if ctx.IsSet("last_hop") {
+		lastHop, err := hex.DecodeString(ctx.String("last_hop"))
+		if err != nil {
+			return fmt.Errorf("invalid last_hop argument: %w", err)
+		}
+		req.LastHopPubkey = lastHop
 	}
 
 	if ctx.IsSet("route_hints") {
